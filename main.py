@@ -37,11 +37,13 @@ async def on_shame(ctx, *args):
 @bot.command(name='announce', help='Announces a time to play badminton for the current day')
 async def on_announce(ctx, time):
     channel = discord.utils.get(ctx.guild.text_channels, name='i-request-badminton')
-    try:
-        await channel.send('everyone Hello edgelords! Badminton will be played at ' + time + ' today.')
-    except discord.ext.commands.errors.MissingRequiredArgument:
-        await channel.send('MissingRequiredArgument: Loser, you need to insert a time') # TODO call the user an insult
-
+    await channel.send('everyone Hello edgelords! Badminton will be played at ' + time + ' today.')
+ 
+@on_announce.error
+async def on_announce_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send("MissingRequiredArguement: You're missing a time, dummy") # TODO add insulting name
+ 
 '''
     Description:    Creates a shame_list based on whoever is tagged 'Shame Listed' on
                     the server. 
