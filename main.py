@@ -1,5 +1,7 @@
 import os
 import discord
+import re
+from discord.errors import InvalidArgument
 from discord.ext.commands.errors import MissingRequiredArgument
 from dotenv import load_dotenv
 from discord.ext import commands
@@ -21,6 +23,10 @@ async def on_ready():
 
 @bot.command(name='shame', help='Prints out the members of the shame list')
 async def on_shame(ctx, *args):
+    command_channel = discord.utils.get(ctx.guild.text_channels, name='bot-tinkering')
+    if ctx.message.channel != command_channel:
+        return
+
     if len(args) == 0:
         role = get(ctx.guild.roles, name='Shame Listed')
         members = await ctx.guild.fetch_members().flatten()  
@@ -36,14 +42,31 @@ async def on_shame(ctx, *args):
 
 @bot.command(name='announce', help='Announces a time to play badminton for the current day')
 async def on_announce(ctx, time):
-    channel = discord.utils.get(ctx.guild.text_channels, name='i-request-badminton')
-    await channel.send('everyone Hello edgelords! Badminton will be played at ' + time + ' today.')
+    command_channel = discord.utils.get(ctx.guild.text_channels, name='bot-tinkering')
+    if ctx.message.channel != command_channel:
+        return
+
+    channel = discord.utils.get(ctx.guild.text_channels, name='bot-tinkering') # different name
+    regex = re.compile(r'((0?[1-9]|1[0-2]):([0-5]\d)((?:A|P)\.?M\.?))')
+    is_match = regex.match(time.strip())
+    print(time)
+    print(is_match)
+    try:
+        if is_match is None:
+            raise InvalidArgument('InvalidArgument: Argument must be in the format of HH:MM(PM|AM)')
+        else:
+            await command_channel.send('everyone Hello edgelords! Badminton will be played at ' + regex.group(0) + ' today.')
+    except InvalidArgument as ex:
+        await command_channel.send(ex.args)
+        return
+    
  
 @on_announce.error
 async def on_announce_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send("MissingRequiredArguement: You're missing a time, dummy") # TODO add insulting name
  
+
 '''
     Description:    Creates a shame_list based on whoever is tagged 'Shame Listed' on
                     the server. 
