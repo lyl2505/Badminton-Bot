@@ -11,9 +11,10 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 MAX_NAME_LENGTH = 32
 
-# allows guild.members to display all members
+# allows guild.members to display all members and manage permissions
 intents = discord.Intents.default()
 intents.members = True
+discord.Permissions.manage_roles = True
 client = discord.Client(intents = intents)
 bot = commands.Bot(command_prefix='!', intents = intents)
 
@@ -26,20 +27,34 @@ async def on_shame(ctx, *args):
     command_channel = discord.utils.get(ctx.guild.text_channels, name='bot-tinkering')
     if ctx.message.channel != command_channel:
         return
+    try:
+        if len(args) == 0:
+            role = get(ctx.guild.roles, name='Shame Listed')
+            members = await ctx.guild.fetch_members().flatten()  
+            if len(members) == 0:
+                await ctx.send("Wow, there are no members to shame!") 
+            for member in members:
+                if role in member.roles:
+                    await ctx.send(member.name)
+        elif args[0] == 'init':
+            if len(args) > 2:
+                raise InvalidArgument('InvalidArgument: Too many arguments')
+            await init_shame_list(ctx)
+        elif args[0] == 'remove':
+            if len(args) < 2:
+                raise InvalidArgument('InvalidArgument: Must list 1 or more server members with [Shame Listed] tag')
+            members = args[1:]
+            await remove_from_shame_list(ctx, members)
+        else:
+            await ctx.send('Not a valid command')
+    except InvalidArgument as ex:
+                await ctx.send(ex.args)
 
-    if len(args) == 0:
-        role = get(ctx.guild.roles, name='Shame Listed')
-        members = await ctx.guild.fetch_members().flatten()  
-        if len(members) == 0:
-            await ctx.send("Wow, there are no members to shame!") 
-        for member in members:
-            if role in member.roles:
-                await ctx.send(member.name)
-    elif args[0] == 'init':
-        await init_shame_list(ctx)
-    else:
-        await ctx.send('Not a valid command')
-
+'''
+    !announce time
+    Pings the entire guild on i-request-badminton channel and tells the time when it happens
+    @exception InvalidArgument if {time} doesn't fit the HH:MM(PM|AM) regex
+'''
 @bot.command(name='announce', help='Announces a time to play badminton for the current day')
 async def on_announce(ctx, time):
     command_channel = discord.utils.get(ctx.guild.text_channels, name='bot-tinkering')
@@ -54,7 +69,7 @@ async def on_announce(ctx, time):
         if is_match is None:
             raise InvalidArgument('InvalidArgument: Argument must be in the format of HH:MM(PM|AM)')
         else:
-            await command_channel.send('everyone Hello edgelords! Badminton will be played at ' + is_match.group(0) + ' today.')
+            await command_channel.send('everyone Hello edgelords! Badminton will be played at ' + is_match.group(0) + ' today.') # @everyone
     except InvalidArgument as ex:
         await command_channel.send(ex.args)
         return
@@ -67,9 +82,9 @@ async def on_announce_error(ctx, error):
  
 
 '''
-    Description:    Creates a shame_list based on whoever is tagged 'Shame Listed' on
-                    the server. 
-                    TODO
+    Creates a shame_list based on whoever is tagged 'Shame Listed' on
+    the server. 
+    TODO
 '''
 async def init_shame_list(ctx):
     shame_list_channel = discord.utils.get(ctx.guild.text_channels, name='shame-list')
@@ -82,5 +97,24 @@ async def init_shame_list(ctx):
             shame_list += (member.name + '\n')
     shame_list = shame_list + '```'
     await shame_list_channel.send(shame_list)
+
+async def remove_from_shame_list(ctx, members): 
+    removal_log = ""
+    shame_role = get(ctx.guild.roles, name='Shame Listed')
+    for member in members:
+        username = member.split('#')
+        if member == username:
+            removal_log += member + ' is not in the correct format\n'
+        else:
+            is_member = get(await ctx.guild.fetch_members().flatten(), name=username[0], discriminator=username[1])
+            if is_member is None:
+                removal_log += member + ' does not exist\n'
+            elif shame_role not in is_member.roles:
+                removal_log += member + ' is not Shame Listed\n'
+            else:
+                await is_member.remove_roles(shame_role)
+                removal_log += member + ' is removed from the Shame List'
+                
+    await ctx.send(removal_log)
 
 bot.run(TOKEN)
