@@ -92,10 +92,12 @@ async def init_shame_list(ctx):
 
 @bot.command(name='checkin', help='Logs a user\'s participation\nUsage: !checkin (name) {date}\n\tDates should be in'
                                   'format YYYYXMMXDD where X is a delimeter: /|-:,; or whitespace')
-async def checkin(ctx, name: str, date: str = None):
+async def checkin(ctx, name: str = None, date: str = None):
     """
-    Updates check-in_dates.txt with a given user and a new checkin date. date defaults to today according to system
-    time. Adds a new line entry
+    Updates check-in_dates.txt with a given user and a new checkin date.
+    Date defaults to today according to system time.
+    Name defaults to message author.
+    Adds a new line entry if the specified user is not currently in the database.
     :param ctx: Calling Context
     :param name: Name, #, and discriminator of the user to checkin e.g. "Joe#1234"
     :param date: Date of checkin e.g. 2021-11-01
@@ -104,12 +106,15 @@ async def checkin(ctx, name: str, date: str = None):
 
     channel = ctx.message.channel
 
-    command_channel = discord.utils.get(ctx.guild.text_channels, name='bot-commands')
+    command_channel = discord.utils.get(ctx.guild.text_channels, name='bot-tinkering')
     if channel is not command_channel:
         return
 
     members = await ctx.guild.fetch_members().flatten()
     date_format = "%Y-%m-%d"
+
+    if name is None:
+        name = ctx.message.author.name + "#" + ctx.message.author.discriminator
 
     try:
         date_time = None
@@ -119,7 +124,7 @@ async def checkin(ctx, name: str, date: str = None):
                 date = date.replace(d, ",")
             date = date.strip()
             date_components = [int(c) for c in date.split(",")]
-            if len(date_components) is not 3:  # or False in [c.isnumeric() for c in date_components]
+            if len(date_components) != 3:  # or False in [c.isnumeric() for c in date_components]
                 raise InvalidArgument(
                     "Dates should be in format YYYYXMMXDD where X is a delimeter: /|-:,; or whitespace")
             date_time = dt.datetime(date_components[0], date_components[1], date_components[2])
