@@ -9,6 +9,7 @@ Those who are shame listed will occasionally be reminded of their unfortunate fa
 import os
 import discord
 import re
+import member_info
 from datetime import datetime as dt
 from discord.errors import InvalidArgument
 from dotenv import load_dotenv
@@ -250,5 +251,6 @@ async def update_shame_list(ctx):
                     await ctx.channel.send(member.name + " has finally attended badminton! "
                                                          "Everybody slow-clap.")
 
+print(member_info.member_info_init(filename))
 
 bot.run(TOKEN)
