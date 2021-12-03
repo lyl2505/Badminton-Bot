@@ -46,16 +46,15 @@ async def on_announce(ctx, time):
     if ctx.message.channel != command_channel:
         return
 
+    time = time.upper()
     channel = discord.utils.get(ctx.guild.text_channels, name='bot-tinkering') # different name
     regex = re.compile(r'((0?[1-9]|1[0-2]):([0-5]\d)((?:A|P)\.?M\.?))')
     is_match = regex.match(time.strip())
-    print(time)
-    print(is_match)
     try:
         if is_match is None:
             raise InvalidArgument('InvalidArgument: Argument must be in the format of HH:MM(PM|AM)')
         else:
-            await command_channel.send('everyone Hello edgelords! Badminton will be played at ' + regex.group(0) + ' today.')
+            await command_channel.send('everyone Hello edgelords! Badminton will be played at ' + is_match.group(0) + ' today.')
     except InvalidArgument as ex:
         await command_channel.send(ex.args)
         return
