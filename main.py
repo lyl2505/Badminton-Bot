@@ -1,3 +1,11 @@
+"""
+Discord Bot who reigns over the Badminton Gang Server.
+This bot monitors how long a person hasn't been playing badminton for,
+and if a member hasn't played for over 21 days, then they are shame listed
+Those who are shame listed will occasionally be reminded of their unfortunate fate.
+:authors Y0w0 and Eddie
+"""
+
 import os
 import discord
 import re
@@ -27,6 +35,12 @@ async def on_ready():
 
 @bot.command(name='shame', help='Prints out the members of the shame list')
 async def on_shame(ctx, *args):
+    """
+    !shame - Publically shames those on the shame list and notes how long they've been on the list
+    !shame remove members - Removes members from the shame list
+    :param ctx: Calling context
+    :param *args: remove members - removes members from the shame list
+    """
     command_channel = discord.utils.get(ctx.guild.text_channels, name='bot-tinkering')
     if ctx.message.channel != command_channel:
         return
@@ -52,16 +66,19 @@ async def on_shame(ctx, *args):
 @bot.command(name='announce', help='Announces a time to play badminton for the current day')
 async def on_announce(ctx, time):
     '''
-        !announce time
-        Pings the entire guild on i-request-badminton channel and tells the time when it happens
-        @exception InvalidArgument if {time} doesn't fit the HH:MM(PM|AM) regex
+    Format: !announce time
+    Pings the entire guild on i-request-badminton channel and tells the time when it happens
+    :param ctx: Calling context
+    :param time: Format HH:MM(PM|AM) time 
+    :exception: InvalidArgument if {time} doesn't fit the HH:MM(PM|AM) regex
+    :return: None
     '''
     command_channel = discord.utils.get(ctx.guild.text_channels, name='bot-tinkering')
     if ctx.message.channel != command_channel:
         return
 
     time = time.upper()
-    channel = discord.utils.get(ctx.guild.text_channels, name='bot-tinkering')  # different name
+    channel = discord.utils.get(ctx.guild.text_channels, name='bot-tinkering')  # i-request-badminton
     regex = re.compile(r'((0?[1-9]|1[0-2]):([0-5]\d)([AP]\.?M\.?))')
     is_match = regex.match(time.strip())
     try:
@@ -76,13 +93,29 @@ async def on_announce(ctx, time):
 
 @on_announce.error
 async def on_announce_error(ctx, error):
+    """
+    Catches MissingRequirementArgument error from function on_announce. 
+    Prints error message onto bot-tinkering channel
+    :param ctx: Calling context
+    :param error: error from on_announce function
+    :return: None
+    """
+    channel = get(ctx.guild.text_channels, name='bot-tinkering') # bot-commands
     if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send("MissingRequiredArguement: You're missing a time, dummy")  # TODO add insulting name
+        await channel.send("MissingRequiredArguement: You're missing a time, dummy")  # TODO add insulting name
 
 
 async def remove_from_shame_list(ctx, members): 
+    """
+    Checks if members exist in the Discord server and removes the Shame Listed tag
+    if tagged.
+    :param ctx: Calling context
+    :param members: list of members to validate and remove Shame Listed tag
+    :return: None
+    """
     removal_log = ""
     shame_role = get(ctx.guild.roles, name='Shame Listed')
+    channel = get(ctx.guild.text_channels, name='bot-tinkering') # bot-commands
     for member in members:
         username = member.split('#')
         if member == username[0]:
@@ -97,7 +130,7 @@ async def remove_from_shame_list(ctx, members):
                 await is_member.remove_roles(shame_role)
                 removal_log += member + ' is removed from the Shame List'
                 
-    await ctx.send(removal_log)
+    await channel.send(removal_log)
     
 @bot.command(name='checkin', help='Logs a user\'s participation\nUsage: !checkin (name) {date}\n\tDates should be in'
                                   'format YYYYXMMXDD where X is a delimeter: /|-:,; or whitespace')
@@ -183,7 +216,6 @@ async def update_shame_list(ctx):
     :param ctx: Calling context
     :return: None
     """
-
     badminton_bot_id = 915347773522583603
     shame_listed_role_id = 915410173596663868
 
