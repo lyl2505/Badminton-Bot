@@ -39,10 +39,6 @@ async def on_shame(ctx, *args):
             for member in members:
                 if role in member.roles:
                     await ctx.send(member.name)
-        elif args[0] == 'init':
-            if len(args) > 2:
-                raise InvalidArgument('InvalidArgument: Too many arguments')
-            await init_shame_list(ctx)
         elif args[0] == 'remove':
             if len(args) < 2:
                 raise InvalidArgument('InvalidArgument: Must list 1 or more server members with [Shame Listed] tag')
@@ -51,15 +47,15 @@ async def on_shame(ctx, *args):
         else:
             await ctx.send('Not a valid command')
     except InvalidArgument as ex:
-                await ctx.send(ex.args)
+        await ctx.send(ex.args)
 
-@bot.command(name='announce', help='Announces a time to play badminton for the current day'
+@bot.command(name='announce', help='Announces a time to play badminton for the current day')
 async def on_announce(ctx, time):
-'''
-    !announce time
-    Pings the entire guild on i-request-badminton channel and tells the time when it happens
-    @exception InvalidArgument if {time} doesn't fit the HH:MM(PM|AM) regex
-'''
+    '''
+        !announce time
+        Pings the entire guild on i-request-badminton channel and tells the time when it happens
+        @exception InvalidArgument if {time} doesn't fit the HH:MM(PM|AM) regex
+    '''
     command_channel = discord.utils.get(ctx.guild.text_channels, name='bot-tinkering')
     if ctx.message.channel != command_channel:
         return
@@ -78,35 +74,18 @@ async def on_announce(ctx, time):
         await command_channel.send(ex.args)
         return
 
-
 @on_announce.error
 async def on_announce_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send("MissingRequiredArguement: You're missing a time, dummy")  # TODO add insulting name
 
-async def init_shame_list(ctx):
-    """
-        Description:    Creates a shame_list based on whoever is tagged 'Shame Listed' on
-                        the server.
-                        TODO
-    """
-    shame_list_channel = discord.utils.get(ctx.guild.text_channels, name='shame-list')
-    await shame_list_channel.purge()  # clears entire shame-list channel
-    members = await ctx.guild.fetch_members().flatten()
-    role = get(ctx.guild.roles, name='Shame Listed')
-    shame_list = '```The Shame List\n'
-    for member in members:
-        if role in member.roles:
-            shame_list += (member.name + '\n')
-    shame_list = shame_list + '```'
-    await shame_list_channel.send(shame_list)
 
 async def remove_from_shame_list(ctx, members): 
     removal_log = ""
     shame_role = get(ctx.guild.roles, name='Shame Listed')
     for member in members:
         username = member.split('#')
-        if member == username:
+        if member == username[0]:
             removal_log += member + ' is not in the correct format\n'
         else:
             is_member = get(await ctx.guild.fetch_members().flatten(), name=username[0], discriminator=username[1])
