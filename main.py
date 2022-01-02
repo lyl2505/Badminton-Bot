@@ -251,6 +251,5 @@ async def update_shame_list(ctx):
                     await ctx.channel.send(member.name + " has finally attended badminton! "
                                                          "Everybody slow-clap.")
 
-print(member_info.member_info_init(filename))
-
-bot.run(TOKEN)
+if __name__ == "__main__":
+    bot.run(TOKEN)

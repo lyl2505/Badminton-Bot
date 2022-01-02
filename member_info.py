@@ -27,5 +27,8 @@ def member_info_init(filename):
         }}
 
         file_info['members'].append(member_dict)
+    f.close()
+    info_json = json.dumps(file_info, indent=4)
+    with open('member_info.json', 'w') as file:
+        json.dump(info_json, file)
 
-    return file_info
