@@ -34,9 +34,11 @@ filename = "check-in_dates.txt"
 
 @bot.event
 async def on_ready():
-    await update_members_list()
+    # await update_members_list()
+    pass
 
 async def update_members_list():
+    """Adds all the member information of the discord server into the database"""
     guild = bot.get_guild(SERVER_ID)
     members = await guild.fetch_members().flatten()
     shame_listed_role = get(guild.roles, name="Shame Listed")
