@@ -7,9 +7,11 @@ Those who are shame listed will occasionally be reminded of their unfortunate fa
 """
 
 import os
+import sqlite3
 import discord
 import re
 import member_info
+import manage_players as manage
 from datetime import datetime as dt
 from discord.errors import InvalidArgument
 from dotenv import load_dotenv
@@ -18,6 +20,7 @@ from discord.utils import get
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
+SERVER_ID = int(os.getenv('SERVER_ID'))
 MAX_NAME_LENGTH = 32
 
 # allows guild.members to display all members and manage permissions
@@ -31,7 +34,16 @@ filename = "check-in_dates.txt"
 
 @bot.event
 async def on_ready():
-    print(f'{client.user} has connected to Discord')
+    await update_members_list()
+
+async def update_members_list():
+    guild = bot.get_guild(SERVER_ID)
+    members = await guild.fetch_members().flatten()
+    shame_listed_role = get(guild.roles, name="Shame Listed")
+    for member in members:
+        if member.bot == False:
+            username = member.name + '#' + member.discriminator
+            manage.add_member(member.id, username, 1 if shame_listed_role in member.roles else 0)
 
 
 @bot.command(name='shame', help='Prints out the members of the shame list')
@@ -250,6 +262,7 @@ async def update_shame_list(ctx):
                                                                                 "Everybody slow-clap.")
                     await ctx.channel.send(member.name + " has finally attended badminton! "
                                                          "Everybody slow-clap.")
+
 
 if __name__ == "__main__":
     bot.run(TOKEN)
