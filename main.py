@@ -12,6 +12,7 @@ import discord
 import re
 import member_info
 import manage_players as manage
+import sqlite3 as sql
 from datetime import datetime as dt
 from discord.errors import InvalidArgument
 from dotenv import load_dotenv
@@ -34,7 +35,7 @@ filename = "check-in_dates.txt"
 
 @bot.event
 async def on_ready():
-    # await update_members_list()
+    await update_members_list()
     pass
 
 async def update_members_list():
@@ -45,7 +46,8 @@ async def update_members_list():
     for member in members:
         if member.bot == False:
             username = member.name + '#' + member.discriminator
-            manage.add_member(member.id, username, 1 if shame_listed_role in member.roles else 0)
+            manage.add_member(sql.connect("players.db"), member.id, username, 
+            1 if shame_listed_role in member.roles else 0)
 
 
 @bot.command(name='shame', help='Prints out the members of the shame list')
