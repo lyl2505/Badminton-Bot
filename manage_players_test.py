@@ -3,14 +3,17 @@ import manage_players
 import sqlite3 as sql
 
 class TestManagePlayers(unittest.TestCase):
-    def setUp(self):
-        """Setup temporary database in memory"""
-        self.conn = sql.connect(":memory:")
-        manage_players.init_db(self.conn)
-        self.c = self.conn.cursor()
 
-    def tearDown(self):
-        self.conn.close()
+    @classmethod
+    def setUpClass(cls):
+        """Setup temporary database in memory"""
+        cls.conn = sql.connect(":memory:")
+        manage_players.init_db(cls.conn)
+        cls.c = cls.conn.cursor()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.conn.close()
 
     def test_member_management(self): 
         member = (420, "Foobar", 0)
