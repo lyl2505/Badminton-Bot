@@ -7,10 +7,10 @@ Those who are shame listed will occasionally be reminded of their unfortunate fa
 """
 
 import os
-import sqlite3
+import sqlite3 as sql
 import discord
 import re
-import member_info
+# import member_info
 import manage_players as manage
 import sqlite3 as sql
 from datetime import datetime as dt
@@ -30,12 +30,17 @@ intents.members = True
 discord.Permissions.manage_roles = True
 client = discord.Client(intents=intents)
 bot = commands.Bot(command_prefix='!', intents=intents)
+conn = sql.connect("players.db")
 
 filename = "check-in_dates.txt"
 
 @bot.event
 async def on_ready():
     await update_members_list()
+    pass
+
+@bot.event
+async def on_join():
     pass
 
 async def update_members_list():
@@ -46,7 +51,7 @@ async def update_members_list():
     for member in members:
         if member.bot == False:
             username = member.name + '#' + member.discriminator
-            manage.add_member(sql.connect("players.db"), member.id, username, 
+            manage.add_member(member.id, username, 
             1 if shame_listed_role in member.roles else 0)
 
 
@@ -151,7 +156,7 @@ async def remove_from_shame_list(ctx, members):
     
 @bot.command(name='checkin', help='Logs a user\'s participation\nUsage: !checkin (name) {date}\n\tDates should be in'
                                   'format YYYYXMMXDD where X is a delimeter: /|-:,; or whitespace')
-async def checkin(ctx, name: str = None, date: str = None):
+async def checkin(ctx, minutes: int, name: str = None, date: str = None):
     """
     Updates check-in_dates.txt with a given user and a new checkin date.
     Date defaults to today according to system time.
@@ -162,20 +167,22 @@ async def checkin(ctx, name: str = None, date: str = None):
     :param date: Date of checkin e.g. 2021-11-01
     :return: None
     """
-
+    
     channel = ctx.message.channel
 
     command_channel = discord.utils.get(ctx.guild.text_channels, name='bot-tinkering')
     if channel is not command_channel:
         return
 
-    members = await ctx.guild.fetch_members().flatten()
     date_format = "%Y-%m-%d"
-    member_id = None
+
+    if minutes is None:
+        await channel.send("Usage: !checkin minutes [name] [date]")
+    if minutes <= 0:
+        await channel.send("Error: minutes must be greater than 0")
 
     if name is None:
         name = ctx.message.author.name + "#" + ctx.message.author.discriminator
-
     try:
         date_time = None
         if date is not None:
@@ -194,31 +201,11 @@ async def checkin(ctx, name: str = None, date: str = None):
         else:
             date_time = dt.now().strftime(date_format)
 
-        match_member = [m for m in members if m.name + "#" + m.discriminator == name]
-        if len(match_member) > 0:
-            member_id = match_member[0].id
-        else:
+        member_info = manage.get_member(conn, name)
+        if len(member_info) == 0:
             raise InvalidArgument("That user does not exist!")
 
-        with open(filename, 'r+') as file:
-            user_found = False
-
-            data = ""
-
-            for line in file:
-                line_name = line.split()[0]
-                line_date = line.split()[1]
-                line_id = line.split()[2]
-                if line_name == name and int(line_id) == member_id:
-                    user_found = True
-                    data += line_name + " " + date_time + " " + line_id + "\n"
-                else:
-                    data += line_name + " " + line_date + " " + line_id + "\n"
-            if not user_found:
-                data += name + " " + date_time + " " + str(member_id) + "\n"
-            file.seek(0)
-            file.write(data)
-            file.truncate()
+        manage.checkin_member(conn, member_info[0], minutes, date_time)
         await channel.send("Successfully checked in " + name + " for " + date_time)
 
     except InvalidArgument as ex:
