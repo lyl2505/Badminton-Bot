@@ -77,6 +77,8 @@ def checkin_member(conn, id: int, minutes: int, date: str):
     :param minutes int: Amount of minutes a user played.
     :param date str: Formatted YYYY-MM-DD. The date played.
     """
+
+
     c = conn.cursor()
     c.execute("""SELECT MAX(ticket_id) FROM CheckIns WHERE id = ?""", (id, ))
     max_ticket_id = c.fetchone()[0]
@@ -86,6 +88,8 @@ def checkin_member(conn, id: int, minutes: int, date: str):
 
 def get_member(conn, name: str):
     """Returns id, name, and shamelist status of a member"""
+
+    
     c = conn.cursor()
     c.execute("""SELECT * FROM Players WHERE username = ?""", (name, ))
     return c.fetchone()
@@ -94,12 +98,3 @@ def get_member(conn, name: str):
 if __name__ == "__main__":
     conn = sql.connect("players.db")
     init_db(conn)
-
-# Eddie#9542 2021-12-02 206411373197000704
-# Y0w0#7283 2021-12-02 285208951333715968
-# FSL#6132 2021-12-02 334419726706933782
-# de_nice_lie#2701 2021-12-02 312705074331779072
-# swapnil_floyd#2851 2021-12-02 618616700560211968
-# VindowsWirus#0617 2021-12-02 206089809112989697
-# Chellibean#8651 2021-09-15 265601084108701696
-# w.o'b#2253 2021-09-15 380211855940911106

@@ -44,10 +44,18 @@ class TestManagePlayers(unittest.TestCase):
         self.assertEqual(self.c.fetchone(), (member[0], 1, 60, "12-1-21"))
 
         # Checkin different user
-        manage_players.checkin_member(self.conn, "Jeffery", 75, "12-2-21")
+        manage_players.checkin_member(self.conn, 421, 75, "12-2-21")
         self.c.execute("""SELECT * FROM CheckIns WHERE id = ? AND ticket_id = ?""",
-            ("Jeffery", 0))
-        self.assertEqual(self.c.fetchone(), ("Jeffery", 0, 75, "12-2-21"))
+            (421, 0))
+        self.assertEqual(self.c.fetchone(), (421, 0, 75, "12-2-21"))
+
+        # Get member info
+        member_info = manage_players.get_member(self.conn, "Foobar")
+        self.assertEqual(member_info, (421, "Foobar", 0,))
+
+        # Getting non-existant member info
+        member_info = manage_players.get_member(self.conn, "Kento")
+        self.assertIsNone(member_info)
 
 
 if __name__ == "__main__":
