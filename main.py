@@ -156,7 +156,7 @@ async def remove_from_shame_list(ctx, members):
     
 @bot.command(name='checkin', help='Logs a user\'s participation\nUsage: !checkin (name) {date}\n\tDates should be in'
                                   'format YYYYXMMXDD where X is a delimeter: /|-:,; or whitespace')
-async def checkin(ctx, minutes: int, name: str = None, date: str = None):
+async def create_ticket(ctx, minutes: int, name: str = None, date: str = None):
     """
     Updates check-in_dates.txt with a given user and a new checkin date.
     Date defaults to today according to system time.
@@ -170,6 +170,8 @@ async def checkin(ctx, minutes: int, name: str = None, date: str = None):
     
     channel = ctx.message.channel
 
+    author = ctx.message.author
+    god_role = get(ctx.guild.roles, name='Badminton Sons and Daughters')
     command_channel = discord.utils.get(ctx.guild.text_channels, name='bot-tinkering')
     if channel is not command_channel:
         return
@@ -178,11 +180,18 @@ async def checkin(ctx, minutes: int, name: str = None, date: str = None):
 
     if minutes is None:
         await channel.send("Usage: !checkin minutes [name] [date]")
+        return
     if minutes <= 0:
         await channel.send("Error: minutes must be greater than 0")
+        return
 
     if name is None:
-        name = ctx.message.author.name + "#" + ctx.message.author.discriminator
+        name = author.name + "#" + author.discriminator
+    else:
+        name_exists = manage.get_member(name)
+        if name_exists is None:
+            await channel.send(f"{name} does not exist. Try the format username#discriminator")
+            return
     try:
         date_time = None
         if date is not None:
@@ -202,11 +211,16 @@ async def checkin(ctx, minutes: int, name: str = None, date: str = None):
             date_time = dt.now().strftime(date_format)
 
         member_info = manage.get_member(conn, name)
-        if len(member_info) == 0:
+        if member_info is None:
             raise InvalidArgument("That user does not exist!")
 
-        manage.checkin_member(conn, member_info[0], minutes, date_time)
-        await channel.send("Successfully checked in " + name + " for " + date_time)
+        if god_role not in author.roles:
+            ticketed = manage.has_ticket(manage.get_member(name))
+            # TODO has_ticket
+            manage.checkin_member(conn, member_info[0], minutes, date_time, 1)
+        else:
+            manage.checkin_member(conn, member_info[0], minutes, date_time)
+            await channel.send(f"Successfully checked in {name} for {date_time} for {minutes} minutes")
 
     except InvalidArgument as ex:
         await channel.send(ex.args)

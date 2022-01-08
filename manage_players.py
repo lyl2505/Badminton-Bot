@@ -21,8 +21,9 @@ def init_db(conn):
     c.execute("""CREATE TABLE CheckIns(
             id int,
             ticket_id int,
-            hours minutes, 
+            minutes int, 
             date text,
+            ticketed int,
             FOREIGN KEY (id) REFERENCES Players(id)
         )""")
     conn.commit()
@@ -67,7 +68,7 @@ def update_member(conn, id : int, name : str, shamelisted : int):
     c.execute("""UPDATE Players SET username=?, shame_list=? WHERE ID=?""", (name, shamelisted, id))
     conn.commit()
 
-def checkin_member(conn, id: int, minutes: int, date: str):
+def checkin_member(conn, id: int, minutes: int, date: str, ticketed: int = 0):
     """
     Inserts an entry into CheckIns table. The entry contains it's id based on the member,
     the member id, how many minutes played, and the date played.
@@ -83,16 +84,32 @@ def checkin_member(conn, id: int, minutes: int, date: str):
     c.execute("""SELECT MAX(ticket_id) FROM CheckIns WHERE id = ?""", (id, ))
     max_ticket_id = c.fetchone()[0]
     new_ticket_id = 0 if max_ticket_id is None else max_ticket_id + 1
-    c.execute("""INSERT INTO CheckIns VALUES(?, ?, ?, ?)""", (id, new_ticket_id, minutes, date))
+    c.execute("""INSERT INTO CheckIns VALUES(?, ?, ?, ?, ?)""", 
+        (id, new_ticket_id, minutes, date, ticketed))
     conn.commit()
 
 def get_member(conn, name: str):
     """Returns id, name, and shamelist status of a member"""
 
-    
+
     c = conn.cursor()
     c.execute("""SELECT * FROM Players WHERE username = ?""", (name, ))
     return c.fetchone()
+
+def has_ticket(conn, name: str):
+    """
+    :param conn Connection: Connection to the database
+    :param name str: Name of member to check if they have an active ticket
+    :return True: If member has an active ticket
+    :return False: IF member doesn't have an active ticket
+    """
+
+
+    c = conn.cursor()
+    c.execute("""SELECT id FROM Players WHERE username = ?""", (name, ))
+    id = c.fetchone()[0]
+    c.execute("""SELECT MAX(ticketed) FROM CheckIns WHERE id = ?""", (id, ))
+    return True if c.fetchone()[0] == 1 else False
 
 
 if __name__ == "__main__":

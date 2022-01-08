@@ -15,7 +15,7 @@ class TestManagePlayers(unittest.TestCase):
     def tearDownClass(cls):
         cls.conn.close()
 
-    def test_member_management(self): 
+    def test_add_member(self): 
         member = (420, "Foobar", 0)
         manage_players.add_member(self.conn, member[0], member[1], member[2])
         self.c.execute("""SELECT * FROM PLAYERS WHERE id = ?""", (member[0], ))
@@ -31,31 +31,48 @@ class TestManagePlayers(unittest.TestCase):
         self.c.execute("""SELECT * FROM PLAYERS WHERE id = ?""", (member[0], ))
         self.assertEqual(self.c.fetchone(), member)
 
+    def test_checkin_member(self):
+        member = (420, "Foobar", 0)
+
         # Checkin user 1st time
         manage_players.checkin_member(self.conn, member[0], 60, "12-1-21")
         self.c.execute("""SELECT * FROM CheckIns WHERE id = ? AND ticket_id = ?""",
             (member[0], 0))
-        self.assertEqual(self.c.fetchone(), (member[0], 0, 60, "12-1-21"))
+        self.assertEqual(self.c.fetchone(), (member[0], 0, 60, "12-1-21", 0))
 
         # Checkin user 2nd time
         manage_players.checkin_member(self.conn, member[0], 60, "12-1-21")
         self.c.execute("""SELECT * FROM CheckIns WHERE id = ? AND ticket_id = ?""",
             (member[0], 1))
-        self.assertEqual(self.c.fetchone(), (member[0], 1, 60, "12-1-21"))
+        self.assertEqual(self.c.fetchone(), (member[0], 1, 60, "12-1-21", 0))
 
         # Checkin different user
         manage_players.checkin_member(self.conn, 421, 75, "12-2-21")
         self.c.execute("""SELECT * FROM CheckIns WHERE id = ? AND ticket_id = ?""",
             (421, 0))
-        self.assertEqual(self.c.fetchone(), (421, 0, 75, "12-2-21"))
+        self.assertEqual(self.c.fetchone(), (421, 0, 75, "12-2-21", 0))
 
+    def test_get_member(self):
         # Get member info
         member_info = manage_players.get_member(self.conn, "Foobar")
         self.assertEqual(member_info, (421, "Foobar", 0,))
 
         # Getting non-existant member info
         member_info = manage_players.get_member(self.conn, "Kento")
-        self.assertIsNone(member_info)
+        self.assertIsNone(member_info)  
+
+    def test_has_ticket(self):
+        # Check member has ticket without ticket
+        ticketed = manage_players.has_ticket(self.conn, "Foobar")
+        self.assertFalse(ticketed)
+
+        # Check member has ticket with ticket
+        manage_players.add_member(self.conn, 1101, "Eddie", 0)
+        manage_players.checkin_member(self.conn, 1101, 60, "12-3-21", 1)
+        self.c.execute("""SELECT ticketed FROM CheckIns WHERE id = ? AND ticket_id = 0""", (1101, ))
+        self.assertEqual(self.c.fetchone()[0], 1)
+        ticketed = manage_players.has_ticket(self.conn, "Eddie")
+        self.assertTrue(ticketed)
 
 
 if __name__ == "__main__":
