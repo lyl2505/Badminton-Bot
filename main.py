@@ -37,21 +37,29 @@ filename = "check-in_dates.txt"
 @bot.event
 async def on_ready():
     await update_members_list()
+    print('Ready')
     pass
 
-@bot.event
-async def on_join():
-    pass
+@client.event
+async def on_member_join(member):
+    """Once a member joins the discord server, add them to the database not shamelisted"""
+    guild = bot.get_guild(SERVER_ID)
+    command_channel = discord.utils.get(guild.text_channels, name='bot-tinkering')
+    await command_channel.send(f"Welcome, {member.name}#{member.discriminator}")
+    manage.add_member(conn, member.id, member.name + '#' + member.discriminator, shamelisted=0)
+    
 
 async def update_members_list():
     """Adds all the member information of the discord server into the database"""
+
+
     guild = bot.get_guild(SERVER_ID)
     members = await guild.fetch_members().flatten()
     shame_listed_role = get(guild.roles, name="Shame Listed")
     for member in members:
         if member.bot == False:
             username = member.name + '#' + member.discriminator
-            manage.add_member(member.id, username, 
+            manage.add_member(conn, member.id, username, 
             1 if shame_listed_role in member.roles else 0)
 
 
@@ -95,6 +103,8 @@ async def on_announce(ctx, time):
     :exception: InvalidArgument if {time} doesn't fit the HH:MM(PM|AM) regex
     :return: None
     '''
+
+
     command_channel = discord.utils.get(ctx.guild.text_channels, name='bot-tinkering')
     if ctx.message.channel != command_channel:
         return
@@ -122,6 +132,8 @@ async def on_announce_error(ctx, error):
     :param error: error from on_announce function
     :return: None
     """
+
+
     channel = get(ctx.guild.text_channels, name='bot-tinkering') # bot-commands
     if isinstance(error, commands.MissingRequiredArgument):
         await channel.send("MissingRequiredArguement: You're missing a time, dummy")  # TODO add insulting name
@@ -214,11 +226,14 @@ async def create_ticket(ctx, minutes: int, name: str = None, date: str = None):
         if member_info is None:
             raise InvalidArgument("That user does not exist!")
 
-        if god_role not in author.roles:
+        if god_role not in author.roles: # if admin didn't send the message
             ticketed = manage.has_ticket(manage.get_member(name))
-            # TODO has_ticket
-            manage.checkin_member(conn, member_info[0], minutes, date_time, 1)
-        else:
+            if ticketed:
+                await channel.send("Cannot create another ticket with an active ticket")
+                return
+            else:
+                manage.checkin_member(conn, member_info[0], minutes, date_time, 1)
+        else: # if admin sent the message
             manage.checkin_member(conn, member_info[0], minutes, date_time)
             await channel.send(f"Successfully checked in {name} for {date_time} for {minutes} minutes")
 

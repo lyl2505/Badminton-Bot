@@ -16,6 +16,7 @@ def init_db(conn):
             id int NOT NULL, 
             username text,
             shame_list int NOT NULL,
+            current_member NOT NULL,
             PRIMARY KEY (id)
         )""")
     c.execute("""CREATE TABLE CheckIns(
@@ -28,7 +29,17 @@ def init_db(conn):
         )""")
     conn.commit()
 
-def add_member(conn, id: int, name: str, shamelisted: int):
+
+def left_member(conn, id: int):
+    """Sets status of member as not-in-server-anymore"""
+
+
+    c = conn.cursor()
+    c.execute("""UPDATE Players SET current_member = ? WHERE id = ?""", (0, id))
+    conn.commit()
+
+
+def add_member(conn, id: int, name: str, shamelisted: int, current_member: int = 1):
     """
     Adds a member into Players table if their id is not currently in the table.
     If their id is in the table, then their information is updated.
@@ -42,9 +53,8 @@ def add_member(conn, id: int, name: str, shamelisted: int):
     
 
     c = conn.cursor()
-    args = (id, name, shamelisted)
     try:
-        c.execute("""INSERT INTO Players VALUES(?, ?, ?)""", args)
+        c.execute("""INSERT INTO Players VALUES(?, ?, ?, ?)""", (id, name, shamelisted, current_member))
     except sql.IntegrityError as ex:
         print(f"{ex}: {name} already exists in the database")
         update_member(conn, id, name, shamelisted)

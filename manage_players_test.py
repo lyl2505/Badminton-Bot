@@ -16,17 +16,17 @@ class TestManagePlayers(unittest.TestCase):
         cls.conn.close()
 
     def test_add_member(self): 
-        member = (420, "Foobar", 0)
+        member = (420, "Foobar", 0, 1)
         manage_players.add_member(self.conn, member[0], member[1], member[2])
         self.c.execute("""SELECT * FROM PLAYERS WHERE id = ?""", (member[0], ))
         self.assertEqual(self.c.fetchone(), member)
 
-        member = (421, "Foobar", 0)
+        member = (421, "Foobar", 0, 1)
         manage_players.add_member(self.conn, member[0], member[1], member[2])
         self.c.execute("""SELECT * FROM PLAYERS WHERE id = ?""", (member[0], ))
         self.assertEqual(self.c.fetchone(), member)
 
-        member = (420, "Zabraf", 1)
+        member = (420, "Zabraf", 1, 1)
         manage_players.add_member(self.conn, member[0], member[1], member[2])
         self.c.execute("""SELECT * FROM PLAYERS WHERE id = ?""", (member[0], ))
         self.assertEqual(self.c.fetchone(), member)
@@ -55,7 +55,7 @@ class TestManagePlayers(unittest.TestCase):
     def test_get_member(self):
         # Get member info
         member_info = manage_players.get_member(self.conn, "Foobar")
-        self.assertEqual(member_info, (421, "Foobar", 0,))
+        self.assertEqual(member_info, (421, "Foobar", 0, 1))
 
         # Getting non-existant member info
         member_info = manage_players.get_member(self.conn, "Kento")
@@ -73,6 +73,16 @@ class TestManagePlayers(unittest.TestCase):
         self.assertEqual(self.c.fetchone()[0], 1)
         ticketed = manage_players.has_ticket(self.conn, "Eddie")
         self.assertTrue(ticketed)
+
+    def test_member_leaving(self):
+        # Check status of current member
+        self.c.execute("""SELECT current_member FROM Players WHERE id = ?""", (1101, ))
+        self.assertEqual(self.c.fetchone()[0], 1)
+
+        # Current member Eddie leaves
+        manage_players.left_member(self.conn, 1101)
+        self.c.execute("""SELECT current_member FROM Players WHERE id = ?""", (1101, ))
+        self.assertEqual(self.c.fetchone()[0], 0)
 
 
 if __name__ == "__main__":
