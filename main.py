@@ -48,6 +48,11 @@ async def on_member_join(member):
     await command_channel.send(f"Welcome, {member.name}#{member.discriminator}")
     manage.add_member(conn, member.id, member.name + '#' + member.discriminator, shamelisted=0)
     
+@client.event
+async def on_member_remove(member):
+    """Once a member leaves the discord server, note their entry on the database as not a current member"""
+    manage.left_member(conn, member.id)
+
 
 async def update_members_list():
     """Adds all the member information of the discord server into the database"""

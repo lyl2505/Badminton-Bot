@@ -29,11 +29,22 @@ def init_db(conn):
         )""")
     conn.commit()
 
+def get_checkin(conn, id: int, ticket_id: int):
+    """
+    Get information of a checkin
+
+    :param conn Connection: Connection to the database
+    :param id int: Unique id of a member
+    :param ticket_id: The checkin number
+    """
+
+
+    c = conn.cursor()
+    c.execute("""SELECT * FROM CheckIns WHERE id = ? AND ticket_id = ?""", (id, ticket_id))
+    return c.fetchone()
 
 def left_member(conn, id: int):
     """Sets status of member as not-in-server-anymore"""
-
-
     c = conn.cursor()
     c.execute("""UPDATE Players SET current_member = ? WHERE id = ?""", (0, id))
     conn.commit()
@@ -91,10 +102,13 @@ def checkin_member(conn, id: int, minutes: int, date: str, ticketed: int = 0):
 
 
     c = conn.cursor()
+    c.execute("""SELECT current_member FROM Players WHERE id = ?""", (id, ))
+    if c.fetchone()[0] == 0:
+        return
     c.execute("""SELECT MAX(ticket_id) FROM CheckIns WHERE id = ?""", (id, ))
     max_ticket_id = c.fetchone()[0]
     new_ticket_id = 0 if max_ticket_id is None else max_ticket_id + 1
-    c.execute("""INSERT INTO CheckIns VALUES(?, ?, ?, ?, ?)""", 
+    c.execute("""INSERT INTO CheckIns VALUES(?, ?, ?, ?, ?) """, 
         (id, new_ticket_id, minutes, date, ticketed))
     conn.commit()
 
@@ -103,7 +117,7 @@ def get_member(conn, name: str):
 
 
     c = conn.cursor()
-    c.execute("""SELECT * FROM Players WHERE username = ?""", (name, ))
+    c.execute("""SELECT * FROM Players WHERE username = ? AND current_member = 1""", (name, ))
     return c.fetchone()
 
 def has_ticket(conn, name: str):

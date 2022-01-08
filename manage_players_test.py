@@ -1,4 +1,6 @@
 import unittest
+
+from discord.ext.commands.core import check
 import manage_players
 import sqlite3 as sql
 
@@ -36,21 +38,18 @@ class TestManagePlayers(unittest.TestCase):
 
         # Checkin user 1st time
         manage_players.checkin_member(self.conn, member[0], 60, "12-1-21")
-        self.c.execute("""SELECT * FROM CheckIns WHERE id = ? AND ticket_id = ?""",
-            (member[0], 0))
-        self.assertEqual(self.c.fetchone(), (member[0], 0, 60, "12-1-21", 0))
+        checkin_info = manage_players.get_checkin(self.conn, member[0], 0)
+        self.assertEqual(checkin_info, (member[0], 0, 60, "12-1-21", 0))
 
         # Checkin user 2nd time
         manage_players.checkin_member(self.conn, member[0], 60, "12-1-21")
-        self.c.execute("""SELECT * FROM CheckIns WHERE id = ? AND ticket_id = ?""",
-            (member[0], 1))
-        self.assertEqual(self.c.fetchone(), (member[0], 1, 60, "12-1-21", 0))
+        checkin_info = manage_players.get_checkin(self.conn, member[0], 1)
+        self.assertEqual(checkin_info, (member[0], 1, 60, "12-1-21", 0))
 
         # Checkin different user
         manage_players.checkin_member(self.conn, 421, 75, "12-2-21")
-        self.c.execute("""SELECT * FROM CheckIns WHERE id = ? AND ticket_id = ?""",
-            (421, 0))
-        self.assertEqual(self.c.fetchone(), (421, 0, 75, "12-2-21", 0))
+        checkin_info = manage_players.get_checkin(self.conn, 421, 0)
+        self.assertEqual(checkin_info, (421, 0, 75, "12-2-21", 0))
 
     def test_get_member(self):
         # Get member info
@@ -74,7 +73,7 @@ class TestManagePlayers(unittest.TestCase):
         ticketed = manage_players.has_ticket(self.conn, "Eddie")
         self.assertTrue(ticketed)
 
-    def test_member_leaving(self):
+    def test_member_left(self):
         # Check status of current member
         self.c.execute("""SELECT current_member FROM Players WHERE id = ?""", (1101, ))
         self.assertEqual(self.c.fetchone()[0], 1)
@@ -83,6 +82,20 @@ class TestManagePlayers(unittest.TestCase):
         manage_players.left_member(self.conn, 1101)
         self.c.execute("""SELECT current_member FROM Players WHERE id = ?""", (1101, ))
         self.assertEqual(self.c.fetchone()[0], 0)
+
+        # Get member of a member who left
+        member = manage_players.get_member(self.conn, "Eddie")
+        self.assertIsNone(member)
+
+        # Checkin member who left
+        self.c.execute("""SELECT MAX(ticket_id) FROM Checkins WHERE id = ?""", (1101, ))
+        before_checkin = self.c.fetchone()[0]
+        manage_players.checkin_member(self.conn, 1101, 5, 12-1-19)
+        self.c.execute("""SELECT MAX(ticket_id) FROM Checkins WHERE id = ?""", (1101, ))
+        after_checkin = self.c.fetchone()[0]
+        self.assertEqual(after_checkin, before_checkin)
+        
+
 
 
 if __name__ == "__main__":
